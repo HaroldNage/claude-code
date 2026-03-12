@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Profile</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      padding: 2rem 1rem;
+      min-height: 100vh;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      padding: 2rem;
+      width: 100%;
+      max-width: 560px;
+      height: fit-content;
+    }
+
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #e5e7eb;
+      flex-shrink: 0;
+    }
+
+    .avatar-placeholder {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: #4f46e5;
+      color: #fff;
+      font-size: 1.75rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    h1 { font-size: 1.4rem; color: #1a1a1a; }
+    .meta { font-size: 0.85rem; color: #6b7280; margin-top: 2px; }
+
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid #e5e7eb;
+      margin-bottom: 1.5rem;
+    }
+
+    .tab {
+      padding: 0.5rem 1.25rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #6b7280;
+      background: none;
+      border: none;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .tab.active { color: #4f46e5; border-bottom-color: #4f46e5; }
+
+    .view-panel, .edit-panel { display: none; }
+    .view-panel.active, .edit-panel.active { display: block; }
+
+    /* View panel */
+    .info-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.95rem;
+      color: #374151;
+    }
+
+    .info-label { font-weight: 600; min-width: 110px; color: #6b7280; }
+    .info-value a { color: #4f46e5; text-decoration: none; }
+    .info-value a:hover { text-decoration: underline; }
+
+    /* Edit panel */
+    .field { margin-bottom: 1.1rem; }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 0.35rem;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 0.55rem 0.75rem;
+      border: 1.5px solid #ccc;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      transition: border-color 0.2s;
+      outline: none;
+      resize: vertical;
+    }
+
+    input:focus, textarea:focus { border-color: #4f46e5; }
+    input.invalid, textarea.invalid { border-color: #dc2626; }
+
+    .error { font-size: 0.8rem; color: #dc2626; margin-top: 0.25rem; min-height: 1rem; }
+
+    .actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+
+    button.primary {
+      flex: 1;
+      padding: 0.65rem;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button.primary:hover { background: #4338ca; }
+    button.primary:disabled { background: #a5b4fc; cursor: not-allowed; }
+
+    button.secondary {
+      flex: 1;
+      padding: 0.65rem;
+      background: #f3f4f6;
+      color: #374151;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button.secondary:hover { background: #e5e7eb; }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(2rem);
+      background: #1a1a1a;
+      color: #fff;
+      padding: 0.65rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none;
+    }
+
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { background: #dc2626; }
+
+    .loading { text-align: center; color: #6b7280; padding: 2rem 0; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div id="loadingState" class="loading">Loading profile…</div>
+
+    <div id="profileContent" style="display:none">
+      <div class="profile-header">
+        <div id="avatarEl" class="avatar-placeholder"></div>
+        <div>
+          <h1 id="headerName"></h1>
+          <div class="meta" id="headerMeta"></div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="view">Profile</button>
+        <button class="tab" data-tab="edit">Edit</button>
+      </div>
+
+      <!-- View panel -->
+      <div class="view-panel active" id="viewPanel">
+        <div class="info-row"><span class="info-label">Name</span><span class="info-value" id="vName"></span></div>
+        <div class="info-row"><span class="info-label">Bio</span><span class="info-value" id="vBio"></span></div>
+        <div class="info-row"><span class="info-label">Location</span><span class="info-value" id="vLocation"></span></div>
+        <div class="info-row"><span class="info-label">Website</span><span class="info-value" id="vWebsite"></span></div>
+        <div class="info-row"><span class="info-label">Birth date</span><span class="info-value" id="vBirthDate"></span></div>
+      </div>
+
+      <!-- Edit panel -->
+      <div class="edit-panel" id="editPanel">
+        <form id="editForm" novalidate>
+          <div class="field">
+            <label for="displayName">Display Name</label>
+            <input type="text" id="displayName" maxlength="100" />
+            <div class="error" id="displayNameError"></div>
+          </div>
+          <div class="field">
+            <label for="bio">Bio</label>
+            <textarea id="bio" rows="3" maxlength="300"></textarea>
+            <div class="error" id="bioError"></div>
+          </div>
+          <div class="field">
+            <label for="location">Location</label>
+            <input type="text" id="location" maxlength="100" />
+            <div class="error" id="locationError"></div>
+          </div>
+          <div class="field">
+            <label for="website">Website</label>
+            <input type="url" id="website" maxlength="2048" placeholder="https://" />
+            <div class="error" id="websiteError"></div>
+          </div>
+          <div class="field">
+            <label for="avatarUrl">Avatar URL</label>
+            <input type="url" id="avatarUrl" maxlength="2048" placeholder="https://" />
+            <div class="error" id="avatarUrlError"></div>
+          </div>
+          <div class="field">
+            <label for="birthDate">Birth Date</label>
+            <input type="date" id="birthDate" />
+            <div class="error" id="birthDateError"></div>
+          </div>
+          <div class="actions">
+            <button type="button" class="secondary" id="cancelBtn">Cancel</button>
+            <button type="submit" class="primary" id="saveBtn">Save changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API_BASE = "/api/profiles";
+    const USER_ID  = 1; // replace with session user ID in production
+
+    let currentProfile = null;
+
+    // ── Toast ───────────────────────────────────────────────────────────────
+    function showToast(msg, isError = false) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.className   = "toast" + (isError ? " error" : "");
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 3000);
+    }
+
+    // ── Render view panel ───────────────────────────────────────────────────
+    function renderView(p) {
+      document.getElementById("vName").textContent      = p.displayName || "—";
+      document.getElementById("vBio").textContent       = p.bio || "—";
+      document.getElementById("vLocation").textContent  = p.location || "—";
+      document.getElementById("vBirthDate").textContent = p.birthDate || "—";
+
+      const websiteEl = document.getElementById("vWebsite");
+      if (p.website) {
+        websiteEl.innerHTML = `<a href="${p.website}" target="_blank" rel="noopener">${p.website}</a>`;
+      } else {
+        websiteEl.textContent = "—";
+      }
+
+      document.getElementById("headerName").textContent = p.displayName || "User";
+      document.getElementById("headerMeta").textContent = p.location || "";
+
+      const avatarEl = document.getElementById("avatarEl");
+      if (p.avatarUrl) {
+        avatarEl.outerHTML = `<img id="avatarEl" class="avatar" src="${p.avatarUrl}" alt="Avatar" />`;
+      } else {
+        avatarEl.textContent = (p.displayName || "U")[0].toUpperCase();
+      }
+    }
+
+    // ── Populate edit form ──────────────────────────────────────────────────
+    function populateForm(p) {
+      document.getElementById("displayName").value = p.displayName || "";
+      document.getElementById("bio").value         = p.bio || "";
+      document.getElementById("location").value    = p.location || "";
+      document.getElementById("website").value     = p.website || "";
+      document.getElementById("avatarUrl").value   = p.avatarUrl || "";
+      document.getElementById("birthDate").value   = p.birthDate || "";
+      clearErrors();
+    }
+
+    function clearErrors() {
+      ["displayName", "bio", "location", "website", "avatarUrl", "birthDate"].forEach(id => {
+        document.getElementById(id).className = "";
+        document.getElementById(id + "Error").textContent = "";
+      });
+    }
+
+    // ── Fetch profile ───────────────────────────────────────────────────────
+    async function loadProfile() {
+      try {
+        const res = await fetch(`${API_BASE}/${USER_ID}`);
+        if (!res.ok) throw new Error("Failed to load profile.");
+        currentProfile = await res.json();
+        renderView(currentProfile);
+        populateForm(currentProfile);
+        document.getElementById("loadingState").style.display  = "none";
+        document.getElementById("profileContent").style.display = "block";
+      } catch (err) {
+        document.getElementById("loadingState").textContent = "Failed to load profile.";
+        showToast(err.message, true);
+      }
+    }
+
+    // ── Save profile ────────────────────────────────────────────────────────
+    document.getElementById("editForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      clearErrors();
+
+      const payload = {
+        displayName: document.getElementById("displayName").value.trim(),
+        bio:         document.getElementById("bio").value.trim(),
+        location:    document.getElementById("location").value.trim(),
+        website:     document.getElementById("website").value.trim(),
+        avatarUrl:   document.getElementById("avatarUrl").value.trim(),
+        birthDate:   document.getElementById("birthDate").value,
+      };
+
+      const saveBtn = document.getElementById("saveBtn");
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Saving…";
+
+      try {
+        const res = await fetch(`${API_BASE}/${USER_ID}`, {
+          method:  "PUT",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          // Show server validation errors on fields
+          (data.errors || [data.error]).forEach(msg => showToast(msg, true));
+          return;
+        }
+
+        currentProfile = data;
+        renderView(currentProfile);
+        showToast("Profile saved successfully.");
+        switchTab("view");
+      } catch (err) {
+        showToast("Failed to save profile.", true);
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Save changes";
+      }
+    });
+
+    // ── Tabs ────────────────────────────────────────────────────────────────
+    function switchTab(name) {
+      document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+      document.getElementById("viewPanel").classList.toggle("active", name === "view");
+      document.getElementById("editPanel").classList.toggle("active", name === "edit");
+      if (name === "edit") populateForm(currentProfile);
+    }
+
+    document.querySelectorAll(".tab").forEach(btn => {
+      btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+    });
+
+    document.getElementById("cancelBtn").addEventListener("click", () => switchTab("view"));
+
+    // ── Init ────────────────────────────────────────────────────────────────
+    loadProfile();
+  </script>
+</body>
+</html>
