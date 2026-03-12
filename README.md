@@ -10,6 +10,36 @@ Claude Code is an agentic coding tool that lives in your terminal, understands y
 
 <img src="./demo.gif" />
 
+## Prerequisites
+
+- **Node.js 18+** — [Download](https://nodejs.org)
+- **An Anthropic API key** — [Get one here](https://console.anthropic.com)
+- **OS:** macOS 10.15+, Linux, or Windows 10/11
+
+## API Key Setup
+
+Set your API key as an environment variable before running Claude Code:
+
+**MacOS/Linux:**
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+```
+
+To persist it, add the line above to your `~/.bashrc`, `~/.zshrc`, or equivalent shell config file.
+
+**Windows (PowerShell):**
+```powershell
+$env:ANTHROPIC_API_KEY="sk-ant-..."
+```
+
+To persist it on Windows, run:
+```powershell
+[System.Environment]::SetEnvironmentVariable("ANTHROPIC_API_KEY","sk-ant-...","User")
+```
+
+> [!TIP]
+> You can also create a `.env` file in your project root with `ANTHROPIC_API_KEY=sk-ant-...` and Claude Code will pick it up automatically.
+
 ## Get started
 > [!NOTE]
 > Installation via npm is deprecated. Use one of the recommended methods below.
