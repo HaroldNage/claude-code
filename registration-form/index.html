@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Registration</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      padding: 2rem;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      color: #1a1a1a;
+    }
+
+    .field {
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 0.4rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1.5px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    input:focus { border-color: #4f46e5; }
+    input.valid   { border-color: #16a34a; }
+    input.invalid { border-color: #dc2626; }
+
+    .error {
+      font-size: 0.8rem;
+      color: #dc2626;
+      margin-top: 0.3rem;
+      min-height: 1rem;
+    }
+
+    .password-wrapper {
+      position: relative;
+    }
+
+    .toggle-pw {
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: #4f46e5;
+      padding: 0;
+    }
+
+    .strength-bar {
+      height: 4px;
+      border-radius: 2px;
+      margin-top: 6px;
+      background: #e5e7eb;
+      overflow: hidden;
+    }
+
+    .strength-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 2px;
+      transition: width 0.3s, background 0.3s;
+    }
+
+    .strength-label {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 3px;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 0.75rem;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: background 0.2s;
+    }
+
+    button[type="submit"]:hover { background: #4338ca; }
+    button[type="submit"]:disabled { background: #a5b4fc; cursor: not-allowed; }
+
+    .success-msg {
+      display: none;
+      text-align: center;
+      color: #16a34a;
+      font-weight: 600;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Create an account</h1>
+    <form id="regForm" novalidate>
+
+      <div class="field">
+        <label for="fullName">Full Name</label>
+        <input type="text" id="fullName" placeholder="Jane Doe" autocomplete="name" />
+        <div class="error" id="fullNameError"></div>
+      </div>
+
+      <div class="field">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" placeholder="jane@example.com" autocomplete="email" />
+        <div class="error" id="emailError"></div>
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <div class="password-wrapper">
+          <input type="password" id="password" placeholder="Min. 8 characters" autocomplete="new-password" />
+          <button type="button" class="toggle-pw" data-target="password">Show</button>
+        </div>
+        <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+        <div class="strength-label" id="strengthLabel"></div>
+        <div class="error" id="passwordError"></div>
+      </div>
+
+      <div class="field">
+        <label for="confirmPassword">Confirm Password</label>
+        <div class="password-wrapper">
+          <input type="password" id="confirmPassword" placeholder="Repeat your password" autocomplete="new-password" />
+          <button type="button" class="toggle-pw" data-target="confirmPassword">Show</button>
+        </div>
+        <div class="error" id="confirmPasswordError"></div>
+      </div>
+
+      <div class="field">
+        <label for="phone">Phone Number <span style="font-weight:400;color:#6b7280">(optional)</span></label>
+        <input type="tel" id="phone" placeholder="+1 555 000 0000" autocomplete="tel" />
+        <div class="error" id="phoneError"></div>
+      </div>
+
+      <button type="submit" id="submitBtn">Register</button>
+      <div class="success-msg" id="successMsg">Account created successfully!</div>
+    </form>
+  </div>
+
+  <script>
+    // ── Validators ──────────────────────────────────────────────────────────
+    const rules = {
+      fullName(v) {
+        if (!v.trim()) return "Full name is required.";
+        if (v.trim().length < 2) return "Name must be at least 2 characters.";
+        if (!/^[a-zA-Z\s'-]+$/.test(v.trim())) return "Name contains invalid characters.";
+        return "";
+      },
+      email(v) {
+        if (!v.trim()) return "Email is required.";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())) return "Enter a valid email address.";
+        return "";
+      },
+      password(v) {
+        if (!v) return "Password is required.";
+        if (v.length < 8) return "Password must be at least 8 characters.";
+        if (!/[A-Z]/.test(v)) return "Include at least one uppercase letter.";
+        if (!/[0-9]/.test(v)) return "Include at least one number.";
+        if (!/[^A-Za-z0-9]/.test(v)) return "Include at least one special character.";
+        return "";
+      },
+      confirmPassword(v) {
+        const pw = document.getElementById("password").value;
+        if (!v) return "Please confirm your password.";
+        if (v !== pw) return "Passwords do not match.";
+        return "";
+      },
+      phone(v) {
+        if (!v.trim()) return ""; // optional
+        if (!/^\+?[\d\s\-().]{7,15}$/.test(v.trim())) return "Enter a valid phone number.";
+        return "";
+      },
+    };
+
+    // ── Password strength ───────────────────────────────────────────────────
+    function passwordStrength(v) {
+      let score = 0;
+      if (v.length >= 8)  score++;
+      if (v.length >= 12) score++;
+      if (/[A-Z]/.test(v)) score++;
+      if (/[0-9]/.test(v)) score++;
+      if (/[^A-Za-z0-9]/.test(v)) score++;
+      const levels = [
+        { label: "",          color: "#e5e7eb", pct: 0   },
+        { label: "Weak",      color: "#dc2626", pct: 20  },
+        { label: "Fair",      color: "#f97316", pct: 40  },
+        { label: "Good",      color: "#eab308", pct: 60  },
+        { label: "Strong",    color: "#16a34a", pct: 80  },
+        { label: "Very strong", color: "#15803d", pct: 100 },
+      ];
+      return levels[score];
+    }
+
+    // ── UI helpers ──────────────────────────────────────────────────────────
+    function setFieldState(id, errorMsg, touched = false) {
+      const input = document.getElementById(id);
+      const err   = document.getElementById(id + "Error");
+      if (errorMsg) {
+        input.className = "invalid";
+        err.textContent = errorMsg;
+      } else if (input.value || touched) {
+        input.className = "valid";
+        err.textContent = "";
+      } else {
+        input.className = "";
+        err.textContent = "";
+      }
+    }
+
+    function validateField(id, touched = false) {
+      const val = document.getElementById(id).value;
+      const msg = rules[id] ? rules[id](val) : "";
+      setFieldState(id, msg, touched);
+      return msg === "";
+    }
+
+    // ── Event wiring ────────────────────────────────────────────────────────
+    ["fullName", "email", "password", "confirmPassword", "phone"].forEach(id => {
+      const input = document.getElementById(id);
+      input.addEventListener("blur",  () => validateField(id));
+      input.addEventListener("input", () => {
+        if (input.classList.contains("invalid")) validateField(id);
+        if (id === "password") {
+          const s = passwordStrength(input.value);
+          document.getElementById("strengthFill").style.width      = s.pct + "%";
+          document.getElementById("strengthFill").style.background = s.color;
+          document.getElementById("strengthLabel").textContent     = s.label;
+          // re-validate confirm if already touched
+          const confirm = document.getElementById("confirmPassword");
+          if (confirm.classList.contains("valid") || confirm.classList.contains("invalid")) {
+            validateField("confirmPassword");
+          }
+        }
+      });
+    });
+
+    // Toggle show/hide password
+    document.querySelectorAll(".toggle-pw").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const input = document.getElementById(btn.dataset.target);
+        const show  = input.type === "password";
+        input.type  = show ? "text" : "password";
+        btn.textContent = show ? "Hide" : "Show";
+      });
+    });
+
+    // Form submit
+    document.getElementById("regForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const fields  = ["fullName", "email", "password", "confirmPassword", "phone"];
+      // Run all validators with touched=true so empty required fields show errors
+      const results = fields.map(id => validateField(id, true));
+      const allValid = results.every(Boolean);
+      if (allValid) {
+        document.getElementById("submitBtn").disabled = true;
+        document.getElementById("successMsg").style.display = "block";
+      } else {
+        // Focus the first invalid field
+        const firstInvalid = fields[results.indexOf(false)];
+        if (firstInvalid) document.getElementById(firstInvalid).focus();
+      }
+    });
+  </script>
+</body>
+</html>
