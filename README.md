@@ -38,7 +38,7 @@ To persist it on Windows, run:
 ```
 
 > [!TIP]
-> You can also create a `.env` file in your project root with `ANTHROPIC_API_KEY=sk-ant-...` and Claude Code will pick it up automatically.
+> To avoid setting the variable every session, add the `export` line to your shell config file (`~/.bashrc`, `~/.zshrc`, etc.) or use a secrets manager.
 
 ## Get started
 > [!NOTE]
@@ -84,7 +84,7 @@ Claude Code integrates directly with popular editors, letting you run it from an
 1. Open the integrated terminal (`Ctrl+`` ` or **Terminal → New Terminal**)
 2. Run `claude` — Claude Code will automatically detect the open file and workspace
 
-For the best experience, install the **Claude Code extension** from the VS Code Marketplace, which adds inline diff views and accepts/rejects directly in the editor.
+Claude Code's diff viewer and inline accept/reject controls are built into the terminal UI — no separate extension is required.
 
 ### JetBrains IDEs (IntelliJ, PyCharm, WebStorm, etc.)
 
@@ -105,7 +105,7 @@ Or use a terminal multiplexer like `tmux` alongside your editor session.
 
 - Run `claude` from your **project root** so it can index your full codebase
 - Use `claude --print` to get a one-shot response without entering interactive mode
-- Pass a file directly: `claude "explain this file" src/index.ts`
+- Start with a question about a file: `claude "explain src/index.ts"`
 
 ## Plugins
 

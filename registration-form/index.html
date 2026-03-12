@@ -136,21 +136,21 @@
 
       <div class="field">
         <label for="fullName">Full Name</label>
-        <input type="text" id="fullName" placeholder="Jane Doe" autocomplete="name" />
+        <input type="text" id="fullName" placeholder="Jane Doe" autocomplete="name" maxlength="100" />
         <div class="error" id="fullNameError"></div>
       </div>
 
       <div class="field">
         <label for="email">Email Address</label>
-        <input type="email" id="email" placeholder="jane@example.com" autocomplete="email" />
+        <input type="email" id="email" placeholder="jane@example.com" autocomplete="email" maxlength="254" />
         <div class="error" id="emailError"></div>
       </div>
 
       <div class="field">
         <label for="password">Password</label>
         <div class="password-wrapper">
-          <input type="password" id="password" placeholder="Min. 8 characters" autocomplete="new-password" />
-          <button type="button" class="toggle-pw" data-target="password">Show</button>
+          <input type="password" id="password" placeholder="Min. 8 characters" autocomplete="new-password" maxlength="128" />
+          <button type="button" class="toggle-pw" data-target="password" aria-label="Show password">Show</button>
         </div>
         <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
         <div class="strength-label" id="strengthLabel"></div>
@@ -160,15 +160,15 @@
       <div class="field">
         <label for="confirmPassword">Confirm Password</label>
         <div class="password-wrapper">
-          <input type="password" id="confirmPassword" placeholder="Repeat your password" autocomplete="new-password" />
-          <button type="button" class="toggle-pw" data-target="confirmPassword">Show</button>
+          <input type="password" id="confirmPassword" placeholder="Repeat your password" autocomplete="new-password" maxlength="128" />
+          <button type="button" class="toggle-pw" data-target="confirmPassword" aria-label="Show confirm password">Show</button>
         </div>
         <div class="error" id="confirmPasswordError"></div>
       </div>
 
       <div class="field">
         <label for="phone">Phone Number <span style="font-weight:400;color:#6b7280">(optional)</span></label>
-        <input type="tel" id="phone" placeholder="+1 555 000 0000" autocomplete="tel" />
+        <input type="tel" id="phone" placeholder="+1 555 000 0000" autocomplete="tel" maxlength="20" />
         <div class="error" id="phoneError"></div>
       </div>
 
@@ -281,6 +281,7 @@
         const show  = input.type === "password";
         input.type  = show ? "text" : "password";
         btn.textContent = show ? "Hide" : "Show";
+        btn.setAttribute("aria-label", show ? "Hide password" : "Show password");
       });
     });
 
@@ -289,11 +290,24 @@
       e.preventDefault();
       const fields  = ["fullName", "email", "password", "confirmPassword", "phone"];
       // Run all validators with touched=true so empty required fields show errors
-      const results = fields.map(id => validateField(id, true));
+      // Phone is optional — validate but keep neutral if empty
+      const results = fields.map(id => validateField(id, id !== "phone"));
       const allValid = results.every(Boolean);
       if (allValid) {
         document.getElementById("submitBtn").disabled = true;
         document.getElementById("successMsg").style.display = "block";
+        // Reset form after short delay so user sees the success message
+        setTimeout(() => {
+          document.getElementById("regForm").reset();
+          fields.forEach(id => {
+            document.getElementById(id).className = "";
+            document.getElementById(id + "Error").textContent = "";
+          });
+          document.getElementById("strengthFill").style.width = "0%";
+          document.getElementById("strengthLabel").textContent = "";
+          document.getElementById("submitBtn").disabled = false;
+          document.getElementById("successMsg").style.display = "none";
+        }, 3000);
       } else {
         // Focus the first invalid field
         const firstInvalid = fields[results.indexOf(false)];

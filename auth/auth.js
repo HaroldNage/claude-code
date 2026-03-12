@@ -1,19 +1,24 @@
 // auth.js — async/await authentication module (after refactor)
 
 const crypto = require("crypto");
+const { promisify } = require("util");
+
+const randomBytes = promisify(crypto.randomBytes);
+
+// Simulated DB — defined once, not recreated on every call
+const users = {
+  "jane@example.com": { id: 1, email: "jane@example.com", passwordHash: "hashed_secret" },
+};
 
 // Simulated DB lookup
 async function findUserByEmail(email) {
   return new Promise((resolve) => {
-    setTimeout(() => {
-      const users = {
-        "jane@example.com": { id: 1, email: "jane@example.com", passwordHash: "hashed_secret" },
-      };
-      resolve(users[email] || null);
-    }, 50);
+    setTimeout(() => resolve(users[email] || null), 50);
   });
 }
 
+// NOTE: SHA-256 is used here for demo purposes only.
+// In production, use a password hashing algorithm like bcrypt or scrypt.
 async function verifyPassword(password, hash) {
   return new Promise((resolve) => {
     setTimeout(() => {
@@ -24,12 +29,8 @@ async function verifyPassword(password, hash) {
 }
 
 async function generateToken() {
-  return new Promise((resolve, reject) => {
-    crypto.randomBytes(32, (err, buf) => {
-      if (err) reject(err);
-      else resolve(buf.toString("hex"));
-    });
-  });
+  const buf = await randomBytes(32);
+  return buf.toString("hex");
 }
 
 async function saveSession(userId, token) {

@@ -49,6 +49,7 @@ describe("power", () => {
   test("raises to the power of one", () => expect(power(7, 1)).toBe(7));
   test("raises to a negative exponent", () => expect(power(2, -2)).toBe(0.25));
   test("raises zero to a positive power", () => expect(power(0, 5)).toBe(0));
+  test("raises to a fractional exponent", () => expect(power(8, 1 / 3)).toBeCloseTo(2));
 });
 
 describe("sqrt", () => {
@@ -58,4 +59,8 @@ describe("sqrt", () => {
   test("throws on negative input", () => {
     expect(() => sqrt(-1)).toThrow("Cannot take square root of a negative number.");
   });
+});
+
+describe("round-trip", () => {
+  test("sqrt(power(x, 2)) === x", () => expect(sqrt(power(5, 2))).toBeCloseTo(5));
 });
