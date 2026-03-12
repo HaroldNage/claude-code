@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UK Customer Returns Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a1a;
+      padding: 1.5rem;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    header h1 { font-size: 1.4rem; }
+    header p  { font-size: 0.85rem; color: #6b7280; margin-top: 2px; }
+
+    .filters {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    select {
+      padding: 0.4rem 0.75rem;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      background: #fff;
+      cursor: pointer;
+      outline: none;
+    }
+
+    select:focus { border-color: #4f46e5; }
+
+    /* KPI cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .kpi {
+      background: #fff;
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+
+    .kpi-label { font-size: 0.8rem; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+    .kpi-value { font-size: 1.75rem; font-weight: 700; margin-top: 0.25rem; }
+    .kpi-sub   { font-size: 0.8rem; color: #6b7280; margin-top: 0.2rem; }
+    .kpi-up    { color: #dc2626; }
+    .kpi-down  { color: #16a34a; }
+
+    /* Chart grid */
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .chart-grid-bottom {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .panel {
+      background: #fff;
+      border-radius: 8px;
+      padding: 1.25rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+
+    .panel h2 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 1rem;
+    }
+
+    .panel canvas { width: 100% !important; }
+
+    /* Table */
+    .table-panel {
+      background: #fff;
+      border-radius: 8px;
+      padding: 1.25rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      margin-top: 1rem;
+      overflow-x: auto;
+    }
+
+    .table-panel h2 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 1rem;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 2px solid #e5e7eb;
+      color: #6b7280;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #f3f4f6; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9fafb; }
+
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-red    { background: #fee2e2; color: #dc2626; }
+    .badge-amber  { background: #fef3c7; color: #d97706; }
+    .badge-green  { background: #dcfce7; color: #16a34a; }
+
+    .rate-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .rate-track {
+      flex: 1;
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .rate-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: #4f46e5;
+    }
+
+    @media (max-width: 700px) {
+      .chart-grid, .chart-grid-bottom { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>UK Returns Dashboard</h1>
+    <p>Most frequently returned products by UK customers</p>
+  </div>
+  <div class="filters">
+    <select id="periodFilter">
+      <option value="30">Last 30 days</option>
+      <option value="90" selected>Last 90 days</option>
+      <option value="180">Last 6 months</option>
+      <option value="365">Last 12 months</option>
+    </select>
+    <select id="categoryFilter">
+      <option value="all">All categories</option>
+      <option value="Electronics">Electronics</option>
+      <option value="Clothing">Clothing</option>
+      <option value="Footwear">Footwear</option>
+      <option value="Home">Home & Garden</option>
+      <option value="Beauty">Beauty</option>
+    </select>
+  </div>
+</header>
+
+<!-- KPI cards -->
+<div class="kpi-grid">
+  <div class="kpi">
+    <div class="kpi-label">Total Returns</div>
+    <div class="kpi-value" id="kpiTotal">—</div>
+    <div class="kpi-sub" id="kpiTotalSub"></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Return Rate</div>
+    <div class="kpi-value" id="kpiRate">—</div>
+    <div class="kpi-sub" id="kpiRateSub"></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Top Returned</div>
+    <div class="kpi-value" id="kpiTop" style="font-size:1.1rem;padding-top:0.35rem">—</div>
+    <div class="kpi-sub" id="kpiTopSub"></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Est. Lost Revenue</div>
+    <div class="kpi-value" id="kpiRevenue">—</div>
+    <div class="kpi-sub" id="kpiRevenueSub"></div>
+  </div>
+</div>
+
+<!-- Charts row 1 -->
+<div class="chart-grid">
+  <div class="panel">
+    <h2>Top 10 Returned Products</h2>
+    <canvas id="barChart" height="220"></canvas>
+  </div>
+  <div class="panel">
+    <h2>Returns by Category</h2>
+    <canvas id="doughnutChart" height="220"></canvas>
+  </div>
+</div>
+
+<!-- Charts row 2 -->
+<div class="chart-grid-bottom">
+  <div class="panel">
+    <h2>Return Trend (weekly)</h2>
+    <canvas id="lineChart" height="180"></canvas>
+  </div>
+  <div class="panel">
+    <h2>Top Return Reasons</h2>
+    <canvas id="reasonChart" height="180"></canvas>
+  </div>
+</div>
+
+<!-- Detail table -->
+<div class="table-panel">
+  <h2>Product Return Details</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Product</th>
+        <th>Category</th>
+        <th>Returns</th>
+        <th>Return Rate</th>
+        <th>Top Reason</th>
+        <th>Avg Days to Return</th>
+        <th>Risk</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<script>
+// ── Sample data ─────────────────────────────────────────────────────────────
+const allProducts = [
+  { name: "Wireless Earbuds Pro",  category: "Electronics", returns: 412, orders: 2100, reason: "Faulty/not working",  avgDays: 8,  price: 79  },
+  { name: "Running Shoes X2",      category: "Footwear",    returns: 389, orders: 3200, reason: "Wrong size",          avgDays: 12, price: 95  },
+  { name: "Smart Watch Series 5",  category: "Electronics", returns: 310, orders: 1400, reason: "Not as described",    avgDays: 10, price: 199 },
+  { name: "Linen Shirt (Summer)",  category: "Clothing",    returns: 295, orders: 4100, reason: "Wrong size",          avgDays: 14, price: 35  },
+  { name: "Yoga Mat Premium",      category: "Home",        returns: 278, orders: 2800, reason: "Not as described",    avgDays: 9,  price: 45  },
+  { name: "Face Serum SPF 50",     category: "Beauty",      returns: 241, orders: 1900, reason: "Skin reaction",       avgDays: 7,  price: 28  },
+  { name: "Bluetooth Speaker",     category: "Electronics", returns: 230, orders: 1750, reason: "Faulty/not working",  avgDays: 11, price: 59  },
+  { name: "Formal Trousers",       category: "Clothing",    returns: 215, orders: 3600, reason: "Wrong size",          avgDays: 13, price: 55  },
+  { name: "Garden Hose 20m",       category: "Home",        returns: 198, orders: 2200, reason: "Damaged in transit",  avgDays: 6,  price: 38  },
+  { name: "Ankle Boots Classic",   category: "Footwear",    returns: 183, orders: 2500, reason: "Wrong size",          avgDays: 15, price: 110 },
+  { name: "Laptop Stand Aluminium",category: "Electronics", returns: 175, orders: 3100, reason: "Not as described",    avgDays: 8,  price: 42  },
+  { name: "Moisturiser Daily",     category: "Beauty",      returns: 162, orders: 2400, reason: "Skin reaction",       avgDays: 6,  price: 22  },
+  { name: "Denim Jacket",          category: "Clothing",    returns: 154, orders: 2900, reason: "Wrong size",          avgDays: 12, price: 65  },
+  { name: "Cordless Vacuum",       category: "Home",        returns: 143, orders: 980,  reason: "Faulty/not working",  avgDays: 9,  price: 189 },
+  { name: "Trainers Classic White",category: "Footwear",    returns: 138, orders: 4200, reason: "Wrong size",          avgDays: 14, price: 75  },
+];
+
+const weeklyTrend = [88, 95, 102, 89, 113, 121, 108, 134, 128, 119, 143, 138];
+const weeks       = ["W1","W2","W3","W4","W5","W6","W7","W8","W9","W10","W11","W12"];
+
+const reasons = {
+  "Wrong size":          38,
+  "Faulty/not working":  27,
+  "Not as described":    18,
+  "Skin reaction":       9,
+  "Damaged in transit":  8,
+};
+
+// ── Chart instances ──────────────────────────────────────────────────────────
+let barChart, doughnutChart, lineChart, reasonChart;
+
+const COLORS = ["#4f46e5","#7c3aed","#2563eb","#0891b2","#059669","#ca8a04","#dc2626","#db2777","#9333ea","#16a34a"];
+const CAT_COLORS = { Electronics:"#4f46e5", Clothing:"#2563eb", Footwear:"#0891b2", Home:"#059669", Beauty:"#db2777" };
+
+function riskBadge(rate) {
+  if (rate >= 20) return `<span class="badge badge-red">High</span>`;
+  if (rate >= 12) return `<span class="badge badge-amber">Medium</span>`;
+  return `<span class="badge badge-green">Low</span>`;
+}
+
+function filtered() {
+  const cat = document.getElementById("categoryFilter").value;
+  const mul = parseInt(document.getElementById("periodFilter").value) / 90;
+  return allProducts
+    .filter(p => cat === "all" || p.category === cat)
+    .map(p => ({ ...p, returns: Math.round(p.returns * mul), orders: Math.round(p.orders * mul) }))
+    .sort((a, b) => b.returns - a.returns);
+}
+
+function render() {
+  const data    = filtered();
+  const top10   = data.slice(0, 10);
+  const total   = data.reduce((s, p) => s + p.returns, 0);
+  const totalOrders = data.reduce((s, p) => s + p.orders, 0);
+  const rate    = totalOrders ? ((total / totalOrders) * 100).toFixed(1) : 0;
+  const revenue = data.reduce((s, p) => s + p.returns * p.price, 0);
+
+  // KPIs
+  document.getElementById("kpiTotal").textContent    = total.toLocaleString();
+  document.getElementById("kpiTotalSub").innerHTML   = `<span class="kpi-up">▲ 6%</span> vs previous period`;
+  document.getElementById("kpiRate").textContent     = rate + "%";
+  document.getElementById("kpiRateSub").innerHTML    = `<span class="kpi-up">▲ 0.4pp</span> vs previous period`;
+  document.getElementById("kpiTop").textContent      = data[0]?.name || "—";
+  document.getElementById("kpiTopSub").textContent   = data[0] ? `${data[0].returns.toLocaleString()} returns` : "";
+  document.getElementById("kpiRevenue").textContent  = "£" + revenue.toLocaleString();
+  document.getElementById("kpiRevenueSub").innerHTML = `<span class="kpi-up">▲ 8%</span> vs previous period`;
+
+  // Bar chart
+  if (barChart) barChart.destroy();
+  barChart = new Chart(document.getElementById("barChart"), {
+    type: "bar",
+    data: {
+      labels: top10.map(p => p.name.length > 22 ? p.name.slice(0, 22) + "…" : p.name),
+      datasets: [{
+        label: "Returns",
+        data: top10.map(p => p.returns),
+        backgroundColor: top10.map((_, i) => COLORS[i % COLORS.length]),
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: "#f3f4f6" } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      },
+    },
+  });
+
+  // Doughnut chart — by category
+  const catTotals = {};
+  data.forEach(p => { catTotals[p.category] = (catTotals[p.category] || 0) + p.returns; });
+  if (doughnutChart) doughnutChart.destroy();
+  doughnutChart = new Chart(document.getElementById("doughnutChart"), {
+    type: "doughnut",
+    data: {
+      labels: Object.keys(catTotals),
+      datasets: [{
+        data: Object.values(catTotals),
+        backgroundColor: Object.keys(catTotals).map(c => CAT_COLORS[c] || "#9ca3af"),
+        borderWidth: 2,
+        borderColor: "#fff",
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "bottom", labels: { font: { size: 11 }, padding: 12 } },
+      },
+      cutout: "62%",
+    },
+  });
+
+  // Line chart
+  const mul = parseInt(document.getElementById("periodFilter").value) / 90;
+  if (lineChart) lineChart.destroy();
+  lineChart = new Chart(document.getElementById("lineChart"), {
+    type: "line",
+    data: {
+      labels: weeks,
+      datasets: [{
+        label: "Returns",
+        data: weeklyTrend.map(v => Math.round(v * mul)),
+        borderColor: "#4f46e5",
+        backgroundColor: "rgba(79,70,229,0.08)",
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: { grid: { color: "#f3f4f6" } },
+      },
+    },
+  });
+
+  // Reason chart
+  if (reasonChart) reasonChart.destroy();
+  reasonChart = new Chart(document.getElementById("reasonChart"), {
+    type: "bar",
+    data: {
+      labels: Object.keys(reasons),
+      datasets: [{
+        label: "% of returns",
+        data: Object.values(reasons),
+        backgroundColor: "#4f46e5",
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 20 } },
+        y: { grid: { color: "#f3f4f6" }, ticks: { callback: v => v + "%" } },
+      },
+    },
+  });
+
+  // Table
+  const tbody = document.getElementById("tableBody");
+  tbody.innerHTML = data.slice(0, 15).map((p, i) => {
+    const rate = ((p.returns / p.orders) * 100).toFixed(1);
+    const pct  = Math.min(parseFloat(rate), 30);
+    return `
+      <tr>
+        <td>${i + 1}</td>
+        <td><strong>${p.name}</strong></td>
+        <td>${p.category}</td>
+        <td>${p.returns.toLocaleString()}</td>
+        <td>
+          <div class="rate-bar">
+            <div class="rate-track"><div class="rate-fill" style="width:${(pct/30)*100}%"></div></div>
+            ${rate}%
+          </div>
+        </td>
+        <td>${p.reason}</td>
+        <td>${p.avgDays}d</td>
+        <td>${riskBadge(parseFloat(rate))}</td>
+      </tr>`;
+  }).join("");
+}
+
+// ── Filters ──────────────────────────────────────────────────────────────────
+document.getElementById("periodFilter").addEventListener("change", render);
+document.getElementById("categoryFilter").addEventListener("change", render);
+
+render();
+</script>
+</body>
+</html>
