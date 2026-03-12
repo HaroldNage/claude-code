@@ -75,6 +75,38 @@ For more installation options, uninstall steps, and troubleshooting, see the [se
 
 2. Navigate to your project directory and run `claude`.
 
+## IDE Integration
+
+Claude Code integrates directly with popular editors, letting you run it from an embedded terminal with full access to your project context.
+
+### VS Code / VS Code-based editors (Cursor, Windsurf)
+
+1. Open the integrated terminal (`Ctrl+`` ` or **Terminal → New Terminal**)
+2. Run `claude` — Claude Code will automatically detect the open file and workspace
+
+For the best experience, install the **Claude Code extension** from the VS Code Marketplace, which adds inline diff views and accepts/rejects directly in the editor.
+
+### JetBrains IDEs (IntelliJ, PyCharm, WebStorm, etc.)
+
+1. Open the built-in terminal (**View → Tool Windows → Terminal**)
+2. Run `claude`
+
+### Neovim / Vim
+
+Run Claude Code in a split terminal:
+
+```vim
+:split | terminal claude
+```
+
+Or use a terminal multiplexer like `tmux` alongside your editor session.
+
+### General tips
+
+- Run `claude` from your **project root** so it can index your full codebase
+- Use `claude --print` to get a one-shot response without entering interactive mode
+- Pass a file directly: `claude "explain this file" src/index.ts`
+
 ## Plugins
 
 This repository includes several Claude Code plugins that extend functionality with custom commands and agents. See the [plugins directory](./plugins/README.md) for detailed documentation on available plugins.
