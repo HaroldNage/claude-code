@@ -1,0 +1,16 @@
+{
+  "name": "claude-code-samples",
+  "version": "1.0.0",
+  "description": "Sample modules from the Claude Code repository",
+  "scripts": {
+    "setup": "npm install && echo 'Setup complete. Run npm test to verify.'",
+    "test": "jest",
+    "start": "node user-profiles/api.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
