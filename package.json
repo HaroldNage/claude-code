@@ -4,6 +4,7 @@
   "description": "Sample modules from the Claude Code repository",
   "scripts": {
     "setup": "npm install && echo 'Setup complete. Run npm test to verify.'",
+    "dev": "node --watch user-profiles/api.js",
     "test": "jest",
     "start": "node user-profiles/api.js"
   },
